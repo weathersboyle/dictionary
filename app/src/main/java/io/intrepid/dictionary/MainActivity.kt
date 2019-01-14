@@ -8,9 +8,13 @@ import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import retrofit2.Retrofit
+import timber.log.Timber
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), Callback<DefinitionResponse> {
     companion object {
         private const val BASE_URL = "https://od-api.oxforddictionaries.com/api/v1/"
         private const val SOURCE_LANGUAGE = "en"
@@ -26,8 +30,18 @@ class MainActivity : AppCompatActivity() {
         defineButton.setOnClickListener { getDefinition(queryText.text) }
     }
 
+    override fun onFailure(call: Call<DefinitionResponse>, t: Throwable) {
+        Timber.e(t)
+    }
+
+    override fun onResponse(call: Call<DefinitionResponse>, response: Response<DefinitionResponse>) {
+        val definition: String = response.body()!!.results[0].lexicalEntries[0].entries[0].senses[0].definitions[0]
+        definitionText.text = definition
+    }
+
     private fun getDefinition(query: CharSequence) {
-        // TODO get definition
+        dictionaryService.getDefinition(SOURCE_LANGUAGE, query.toString().toLowerCase())
+            .enqueue(this)
     }
 
     private fun createDictionaryService(): DictionaryService {
